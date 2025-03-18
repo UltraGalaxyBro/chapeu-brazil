@@ -67,7 +67,7 @@ export default function Index({ products }: IndexProps) {
                     </div>
                     <div className="overflow-hidden bg-white dark:bg-[#171717] shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
-                            <DataTable columns={table(handleDeleteClick, handleShowClick, handleEditClick)} data={products} />
+                            <DataTable columns={table(handleShowClick, handleEditClick, handleDeleteClick)} data={products} />
                         </div>
                     </div>
                 </div>

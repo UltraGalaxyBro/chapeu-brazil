@@ -22,7 +22,7 @@ class ProductController extends Controller
 {
     protected $modelValidator, $imageService;
 
-    public function __construct(RequiredModelsValidatorService $modelValidator ,ImageService $imageService)
+    public function __construct(RequiredModelsValidatorService $modelValidator, ImageService $imageService)
     {
         $this->modelValidator = $modelValidator;
         $this->imageService = $imageService;
@@ -39,7 +39,7 @@ class ProductController extends Controller
             'cor' => Color::class,
             'tamanho' => Size::class,
         ];
-        
+
         $missingItems = $this->modelValidator->validateModels($requiredModels);
         if ($missingItems) {
             $message = $this->modelValidator->createErrorMessage($missingItems);
@@ -100,7 +100,7 @@ class ProductController extends Controller
             'cor' => Color::class,
             'tamanho' => Size::class,
         ];
-        
+
         $missingItems = $this->modelValidator->validateModels($requiredModels);
         if ($missingItems) {
             $message = $this->modelValidator->createErrorMessage($missingItems);
@@ -112,6 +112,7 @@ class ProductController extends Controller
         $colors = Color::all();
         $sizes = Size::all();
         $qualities = Quality::all();
+        sleep(1);
 
         return Inertia::render('admin/product/create', [
             'categories' => $categories,
@@ -220,7 +221,7 @@ class ProductController extends Controller
             'cor' => Color::class,
             'tamanho' => Size::class,
         ];
-        
+
         $missingItems = $this->modelValidator->validateModels($requiredModels);
         if ($missingItems) {
             $message = $this->modelValidator->createErrorMessage($missingItems);
@@ -240,13 +241,29 @@ class ProductController extends Controller
             'cor' => Color::class,
             'tamanho' => Size::class,
         ];
-        
+
         $missingItems = $this->modelValidator->validateModels($requiredModels);
         if ($missingItems) {
             $message = $this->modelValidator->createErrorMessage($missingItems);
             return back()->with('warning', $message);
         }
+        $product->load(['images', 'qualities', 'variants']);;
+        $categories = Category::all();
+        $brands = Brand::all();
+        $colors = Color::all();
+        $sizes = Size::all();
+        $qualities = Quality::all();
+        sleep(1);
+        return Inertia::render('admin/product/edit', [
+            'product' => $product,
+            'categories' => $categories,
+            'brands' => $brands,
+            'colors' => $colors,
+            'sizes' => $sizes,
+            'qualities' => $qualities,
+        ]);
     }
+
 
     /**
      * Update the specified resource in storage.

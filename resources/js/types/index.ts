@@ -1,5 +1,34 @@
 import { LucideIcon } from 'lucide-react';
 
+export interface ImageVersions {
+    original: string;
+    thumbnail: string;
+    small: string;
+    medium: string;
+    large: string;
+}
+
+export interface ProductQuality {
+    id: number;
+    name: string;
+}
+
+export interface ProductImage {
+    id: number;
+    image_versions: { [key: string]: string };
+    image_metadata: { [key: string]: unknown };
+    order: number;
+}
+
+export interface ProductVariant {
+    id: number;
+    product_id: number;
+    color_id: number;
+    size_id: number;
+    stock: number;
+    additional_price: number;
+}
+
 export interface Auth {
     user: User;
 }
@@ -9,28 +38,28 @@ export interface BreadcrumbItem {
     href: string;
 }
 
+export interface NavItem {
+    title: string;
+    url: string;
+    icon?: LucideIcon;
+    isActive?: boolean;
+}
+
 export interface NavGroup {
     title: string;
     items: NavItem[];
 }
 
-export interface NavItem {
-    title: string;
-    url: string;
-    icon?: LucideIcon | null;
-    isActive?: boolean;
-}
-
 export interface SharedData {
     name: string;
     auth: Auth;
-    [key: string]: unknown;
     flash: {
-        success: string;
-        error: string;
-        warning: string;
-        info: string;
+        success: string | null;
+        error: string | null;
+        warning: string | null;
+        info: string | null;
     };
+    [key: string]: unknown;
 }
 
 export interface User {
@@ -48,39 +77,21 @@ export interface Category {
     id: number;
     name: string;
     description: string;
-    image_versions: {
-        original: string;
-        thumbnail: string;
-        small: string;
-        medium: string;
-        large: string;
-    } | null;
+    image_versions: ImageVersions | null;
 }
 
 export interface Brand {
     id: number;
     name: string;
     description: string;
-    image_versions: {
-        original: string;
-        thumbnail: string;
-        small: string;
-        medium: string;
-        large: string;
-    } | null;
+    image_versions: ImageVersions | null;
 }
 
 export interface Quality {
     id: number;
     name: string;
     description: string;
-    image_versions: {
-        original: string;
-        thumbnail: string;
-        small: string;
-        medium: string;
-        large: string;
-    } | null;
+    image_versions: ImageVersions | null;
 }
 
 export interface Color {
@@ -111,25 +122,25 @@ export interface ProductIndex {
 }
 
 export interface ProductRelated {
-    categories: {
+    categories: { id: number; name: string }[];
+    brands: { id: number; name: string }[];
+    colors: { id: number; name: string; hexadecimal: string }[];
+    sizes: { id: number; label: string }[];
+    qualities: { id: number; name: string }[];
+    product?: {
         id: number;
+        category_id: number;
+        brand_id: number;
         name: string;
-    }[];
-    brands: {
-        id: number;
-        name: string;
-    }[];
-    colors: {
-        id: number;
-        name: string;
-        hexadecimal: string;
-    }[];
-    sizes: {
-        id: number;
-        label: string;
-    }[];
-    qualities: {
-        id: number;
-        name: string;
-    }[];
+        sku: string;
+        slug: string;
+        description: string;
+        cost: number;
+        price: number;
+        is_active: boolean;
+        keywords: string;
+        qualities: ProductQuality[];
+        images: ProductImage[];
+        variants: ProductVariant[];
+    };
 }
