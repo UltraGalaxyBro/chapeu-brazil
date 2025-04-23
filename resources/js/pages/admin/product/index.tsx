@@ -27,15 +27,13 @@ export default function Index({ products }: IndexProps) {
     }
 
     const handleShowClick = (product: ProductIndex) => {
-        setSelectedProduct(product);
-        if (!selectedProduct) return;
-        router.get(route('product.show', selectedProduct.id));
+
+        router.get(route('product.show', product.id));
     };
 
     const handleEditClick = (product: ProductIndex) => {
-        setSelectedProduct(product);
-        if (!selectedProduct) return;
-        router.get(route('product.edit', selectedProduct.id));
+
+        router.get(route('product.edit', product.id));
     };
 
     const handleDeleteClick = (product: ProductIndex) => {
@@ -67,7 +65,7 @@ export default function Index({ products }: IndexProps) {
                     </div>
                     <div className="overflow-hidden bg-white dark:bg-[#171717] shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
-                            <DataTable columns={table(handleShowClick, handleEditClick, handleDeleteClick)} data={products} />
+                            <DataTable columns={table(handleShowClick, handleEditClick,handleDeleteClick)} data={products} />
                         </div>
                     </div>
                 </div>

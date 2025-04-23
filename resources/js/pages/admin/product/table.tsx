@@ -24,9 +24,9 @@ import { ProductIndex } from "@/types"
 import { Badge } from "@/components/ui/badge"
 
 export const table = (
-  onDelete: (product: ProductIndex) => void,
+  onShow: (product: ProductIndex) => void,
   onEdit: (product: ProductIndex) => void,
-  onShow: (product: ProductIndex) => void
+  onDelete: (product: ProductIndex) => void
 ): ColumnDef<ProductIndex>[] => [
     {
       accessorKey: "thumbnail",

@@ -30,16 +30,25 @@ class ProductRequest extends FormRequest
             'qualities' => ['nullable', 'array'],
             'qualities.*' => ['integer', 'exists:qualities,id'],
             
+            // Adicione a validação para image_order
+            'image_order' => ['sometimes', 'array'],
+            
+            // Adicione a validação para existing_images
+            'existing_images' => ['sometimes', 'array'],
+            'existing_images.*.id' => ['required', 'integer', 'exists:product_images,id'],
+            'existing_images.*.url' => ['required', 'string'],
+            'existing_images.*.order' => ['required', 'integer', 'min:0'],
+            
             'variants' => ['required', 'array', 'min:1'],
             'variants.*.color_id' => ['required', 'integer', 'exists:colors,id'],
             'variants.*.size_id' => ['required', 'integer', 'exists:sizes,id'],
             'variants.*.stock' => ['required', 'integer', 'min:0'],
             'variants.*.additional_price' => ['numeric', 'min:0'],
         ];
-
+    
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $element = $this->route('product');
-
+    
             $rules['sku'] = ['required', 'string', 'max:100', 'unique:products,sku,' . $element->id];
             $rules['images'] = ['nullable', 'array'];
         } else {
@@ -58,28 +67,32 @@ class ProductRequest extends FormRequest
      * @return array<string, string>
      */
     public function attributes()
-    {
-        return [
-            'category_id' => 'categoria',
-            'brand_id' => 'marca',
-            'name' => 'nome do produto',
-            'sku' => 'SKU',
-            'description' => 'descrição',
-            'cost' => 'custo',
-            'price' => 'preço base',
-            'is_active' => 'produto ativo',
-            'keywords' => 'palavras-chave',
-            'qualities' => 'qualidades',
-            'qualities.*' => 'qualidade',
-            'images' => 'imagens',
-            'images.*' => 'imagem',
-            'variants' => 'variantes',
-            'variants.*.color_id' => 'cor',
-            'variants.*.size_id' => 'tamanho',
-            'variants.*.stock' => 'estoque',
-            'variants.*.additional_price' => 'preço adicional',
-        ];
-    }
+{
+    return [
+        'category_id' => 'categoria',
+        'brand_id' => 'marca',
+        'name' => 'nome do produto',
+        'sku' => 'SKU',
+        'description' => 'descrição',
+        'cost' => 'custo',
+        'price' => 'preço base',
+        'is_active' => 'produto ativo',
+        'keywords' => 'palavras-chave',
+        'qualities' => 'qualidades',
+        'qualities.*' => 'qualidade',
+        'images' => 'imagens',
+        'images.*' => 'imagem',
+        'image_order' => 'ordem das imagens',
+        'existing_images' => 'imagens existentes',
+        'existing_images.*.id' => 'ID da imagem',
+        'existing_images.*.order' => 'ordem da imagem',
+        'variants' => 'variantes',
+        'variants.*.color_id' => 'cor',
+        'variants.*.size_id' => 'tamanho',
+        'variants.*.stock' => 'estoque',
+        'variants.*.additional_price' => 'preço adicional',
+    ];
+}
 
     /**
      * Get custom messages for validator errors.

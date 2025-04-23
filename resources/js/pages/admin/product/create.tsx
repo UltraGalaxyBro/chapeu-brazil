@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, useForm } from '@inertiajs/react';
-import { BreadcrumbItem, ProductRelated } from '@/types';
+import { BreadcrumbItem, ProductCreate } from '@/types';
 import { useEffect, useState, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import InputError from '@/components/input-error';
@@ -16,13 +16,7 @@ import StockInput from '@/components/stock-input';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Criando produto',
-        href: '/produtos/criar',
-    },
-];
-
+// Definindo o tipo para o formulário de criação
 type FormType = {
     category_id: number;
     brand_id: number;
@@ -35,7 +29,6 @@ type FormType = {
     keywords: string;
     qualities: number[];
     images: File[];
-    image_order: number[];
     variants: {
         color_id: number;
         size_id: number;
@@ -44,14 +37,14 @@ type FormType = {
     }[];
 };
 
-export default function CreateProduct({ categories, brands, colors, sizes, qualities }: ProductRelated): React.ReactElement {
+export default function CreateProduct({ categories, brands, colors, sizes, qualities }: ProductCreate): React.ReactElement {
     const [currentStep, setCurrentStep] = useState(1);
     const [previewImages, setPreviewImages] = useState<string[]>([]);
     const totalSteps = 4;
 
-    const { data, setData, post, processing, errors, reset } = useForm<FormType>({
-        category_id: categories[0]?.id || 0,
-        brand_id: brands[0]?.id || 0,
+    const { data, setData, post, processing, errors } = useForm<FormType>({
+        category_id: 0,
+        brand_id: 0,
         name: '',
         sku: '',
         description: '',
@@ -61,7 +54,6 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
         keywords: '',
         qualities: [],
         images: [],
-        image_order: [],
         variants: [],
     });
 
@@ -75,7 +67,7 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
 
         if (errors.name || errors.sku || errors.cost || errors.price || errors.description) errorSteps[1] = true;
         if (errors.category_id || errors.brand_id || errors.keywords || errors.qualities) errorSteps[2] = true;
-        if (errors.images || errors.image_order) errorSteps[3] = true;
+        if (errors.images) errorSteps[3] = true;
         if (errors.variants) errorSteps[4] = true;
 
         return errorSteps;
@@ -85,15 +77,13 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
         if (e.target.files && e.target.files.length > 0) {
             const newImages = [...data.images];
             const newPreviews = [...previewImages];
-            const newImageOrder = [...data.image_order];
 
-            Array.from(e.target.files).forEach((file, idx) => {
+            Array.from(e.target.files).forEach((file) => {
                 newImages.push(file);
                 newPreviews.push(URL.createObjectURL(file));
-                newImageOrder.push(newImages.length - 1);
             });
 
-            setData({ ...data, images: newImages, image_order: newImageOrder });
+            setData({ ...data, images: newImages });
             setPreviewImages(newPreviews);
             toast.success('Imagens adicionadas com sucesso!');
         }
@@ -102,36 +92,33 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
     const removeImage = (index: number) => {
         const newImages = [...data.images];
         const newPreviews = [...previewImages];
-        const newImageOrder = [...data.image_order];
 
         newImages.splice(index, 1);
         newPreviews.splice(index, 1);
-        newImageOrder.splice(index, 1);
-        const adjustedOrder = newImageOrder.map((order, idx) => idx);
 
-        setData({ ...data, images: newImages, image_order: adjustedOrder });
+        setData({ ...data, images: newImages });
         setPreviewImages(newPreviews);
         toast.success('Imagem removida com sucesso!');
     };
 
     const onDragEnd = (result: DropResult) => {
         if (!result.destination) return;
-
+        
+        const sourceIndex = result.source.index;
+        const destinationIndex = result.destination.index;
+        
         const newImages = [...data.images];
         const newPreviews = [...previewImages];
-        const newImageOrder = [...data.image_order];
-
-        const [reorderedImage] = newImages.splice(result.source.index, 1);
-        newImages.splice(result.destination.index, 0, reorderedImage);
-
-        const [reorderedPreview] = newPreviews.splice(result.source.index, 1);
-        newPreviews.splice(result.destination.index, 0, reorderedPreview);
-
-        const [reorderedOrder] = newImageOrder.splice(result.source.index, 1);
-        newImageOrder.splice(result.destination.index, 0, reorderedOrder);
-
-        setData({ ...data, images: newImages, image_order: newImageOrder });
+        
+        const [imageToMove] = newImages.splice(sourceIndex, 1);
+        const [previewToMove] = newPreviews.splice(sourceIndex, 1);
+        
+        newImages.splice(destinationIndex, 0, imageToMove);
+        newPreviews.splice(destinationIndex, 0, previewToMove);
+        
+        setData(prevData => ({...prevData, images: newImages}));
         setPreviewImages(newPreviews);
+        
         toast.success('Ordem das imagens atualizada!');
     };
 
@@ -143,36 +130,85 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
         setData('qualities', qualities);
     };
 
+    const checkForDuplicateVariant = (
+        variants: FormType['variants'],
+        colorId: number,
+        sizeId: number,
+        currentIndex?: number
+    ): boolean => {
+        return variants.some((variant, index) =>
+            variant.color_id === colorId &&
+            variant.size_id === sizeId &&
+            (currentIndex === undefined || index !== currentIndex)
+        );
+    };
+
     const addVariant = () => {
+        let foundValidCombination = false;
         const newVariant = {
-            color_id: colors[0]?.id || 0,
-            size_id: sizes[0]?.id || 0,
+            color_id: 0,
+            size_id: 0,
             stock: 1,
-            additional_price: 0,
+            additional_price: 0
         };
+
+        for (const color of colors) {
+            for (const size of sizes) {
+                if (!checkForDuplicateVariant(data.variants, color.id, size.id)) {
+                    newVariant.color_id = color.id;
+                    newVariant.size_id = size.id;
+                    foundValidCombination = true;
+                    break;
+                }
+            }
+            if (foundValidCombination) break;
+        }
+
+        if (!foundValidCombination) {
+            toast.error('Todas as combinações possíveis já foram adicionadas!');
+            return;
+        }
+
         setData('variants', [...data.variants, newVariant]);
         toast.success('Variante adicionada!');
     };
 
     const generateVariants = () => {
         const newVariants = [];
+
         for (const color of colors) {
             for (const size of sizes) {
-                newVariants.push({
-                    color_id: color.id,
-                    size_id: size.id,
-                    stock: 1,
-                    additional_price: 0,
-                });
+                if (!checkForDuplicateVariant(data.variants, color.id, size.id)) {
+                    newVariants.push({
+                        color_id: color.id,
+                        size_id: size.id,
+                        stock: 1,
+                        additional_price: 0,
+                    });
+                }
             }
         }
-        setData('variants', newVariants);
+
+        if (newVariants.length === 0) {
+            toast.error('Todas as combinações possíveis já foram adicionadas!');
+            return;
+        }
+
+        setData('variants', [...data.variants, ...newVariants]);
         toast.success(`Geradas ${newVariants.length} variações automaticamente!`);
     };
 
-    const updateVariant = (index: number, field: string, value: any) => {
+    const updateVariant = (index: number, field: string, value: number | string) => {
         const updatedVariants = [...data.variants];
-        updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+        const updatedVariant = { ...updatedVariants[index], [field]: value };
+
+        if ((field === 'color_id' || field === 'size_id') &&
+            checkForDuplicateVariant(data.variants, updatedVariant.color_id, updatedVariant.size_id, index)) {
+            toast.error('Já existe uma variante com esta cor e tamanho!');
+            return;
+        }
+
+        updatedVariants[index] = updatedVariant;
         setData('variants', updatedVariants);
     };
 
@@ -184,6 +220,8 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
     };
 
     const validateStep = (step: number): boolean => {
+        const variantMap = new Map();
+
         switch (step) {
             case 1:
                 if (!data.name) {
@@ -227,7 +265,20 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
                     toast.error('Adicione pelo menos uma variante.');
                     return false;
                 }
-                toast.success('Variantes validadas!');
+
+                for (let i = 0; i < data.variants.length; i++) {
+                    const variant = data.variants[i];
+                    const key = `${variant.color_id}-${variant.size_id}`;
+
+                    if (variantMap.has(key)) {
+                        toast.error(`Existem variantes duplicadas (mesma cor e tamanho)!`);
+                        return false;
+                    }
+
+                    variantMap.set(key, true);
+                }
+
+                toast.success('Variantes validadas! Criando produto...');
                 return true;
             default:
                 return true;
@@ -250,9 +301,10 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
         e.preventDefault();
         if (currentStep === totalSteps && validateStep(currentStep)) {
             const formData = new FormData();
+
             Object.entries(data).forEach(([key, value]) => {
                 if (key === 'images') return;
-                else if (key === 'image_order' || key === 'qualities' || key === 'variants') {
+                else if (key === 'qualities' || key === 'variants') {
                     formData.append(key, JSON.stringify(value));
                 } else {
                     formData.append(key, String(value));
@@ -263,33 +315,37 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
                 formData.append(`images[${idx}]`, image);
             });
 
+            const imageOrder = data.images.map((_, index) => index);
+            formData.append('image_order', JSON.stringify(imageOrder));
+
             post(route('product.store'), {
                 forceFormData: true,
                 onSuccess: () => {
-                    reset();
-                    setPreviewImages([]);
+                    toast.success('Produto criado com sucesso!');
                 },
             });
         }
     };
 
     useEffect(() => {
-        return () => previewImages.forEach(url => URL.revokeObjectURL(url));
-    }, []);
-
-    useEffect(() => {
-        if (data.images.length > 0 && data.image_order.length === 0) {
-            const initialOrder = Array.from({ length: data.images.length }, (_, idx) => idx);
-            setData('image_order', initialOrder);
-        }
-    }, [data.images]);
+        return () => previewImages.forEach(url => {
+            if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+        });
+    }, [previewImages]);
 
     const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
     const canSubmit = currentStep === totalSteps && data.variants.length > 0;
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Novo produto',
+            href: 'produtos/novo',
+        },
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Produtos" />
+            <Head title="Criando produto" />
             <div className="py-8 px-4 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-4xl">
                     <div className="mb-6">
@@ -297,26 +353,25 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
                             {Array.from({ length: totalSteps }).map((_, index) => (
                                 <div
                                     key={index}
-                                    className={`flex-1 flex flex-col items-center ${
-                                        index + 1 <= currentStep
-                                            ? 'text-[#171717] dark:text-white'
-                                            : 'text-gray-400 dark:text-gray-500'
-                                    }`}
+                                    className={`flex-1 flex flex-col items-center ${index + 1 <= currentStep
+                                        ? 'text-[#171717] dark:text-white'
+                                        : 'text-gray-400 dark:text-gray-500'
+                                        }`}
                                 >
                                     <div
                                         className={`relative w-8 h-8 rounded-full flex items-center justify-center mb-1
                                         ${index + 1 < currentStep
-                                            ? 'bg-[#171717] dark:bg-white text-white'
-                                            : ''
-                                        }
+                                                ? 'bg-[#171717] dark:bg-white text-white'
+                                                : ''
+                                            }
                                         ${index + 1 === currentStep
-                                            ? 'bg-white dark:bg-gray-800 text-[#171717] dark:text-white border-2 border-[#171717] dark:border-white'
-                                            : ''
-                                        }
+                                                ? 'bg-white dark:bg-gray-800 text-[#171717] dark:text-white border-2 border-[#171717] dark:border-white'
+                                                : ''
+                                            }
                                         ${index + 1 > currentStep
-                                            ? 'bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-300 dark:border-gray-600'
-                                            : ''
-                                        }`}
+                                                ? 'bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-300 dark:border-gray-600'
+                                                : ''
+                                            }`}
                                     >
                                         {index + 1 < currentStep ? (
                                             <Check className="w-5 h-5 text-white dark:text-black" />
@@ -475,8 +530,8 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
                                                 key={tech.id}
                                                 className={`border rounded-lg p-2 transition-all
                                                 ${data.qualities.includes(tech.id)
-                                                    ? 'border-gray-900 bg-gray-100 dark:border-white dark:bg-gray-800'
-                                                    : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500'}`}
+                                                        ? 'border-gray-900 bg-gray-100 dark:border-white dark:bg-gray-800'
+                                                        : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500'}`}
                                             >
                                                 <div className="flex items-center">
                                                     <Checkbox
@@ -485,9 +540,9 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
                                                         checked={data.qualities.includes(tech.id)}
                                                         onCheckedChange={() => handleQualityToggle(tech.id)}
                                                     />
-                                                    <Label 
-                                                        htmlFor={`tech_${tech.id}`} 
-                                                        className="ml-2 cursor-pointer truncate" 
+                                                    <Label
+                                                        htmlFor={`tech_${tech.id}`}
+                                                        className="ml-2 cursor-pointer truncate"
                                                         onClick={() => handleQualityToggle(tech.id)}
                                                     >
                                                         {tech.name}
@@ -520,7 +575,7 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
                                         <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <p className="text-sm text-gray-600">Clique para adicionar imagens</p>
+                                        <p className="text-sm text-gray-600">Clique para adicionar novas imagens</p>
                                         <p className="text-xs text-gray-500">PNG, JPG até 10MB</p>
                                     </label>
                                 </div>
@@ -587,9 +642,9 @@ export default function CreateProduct({ categories, brands, colors, sizes, quali
                                         <Button type="button" onClick={addVariant} className="w-full sm:w-auto">
                                             Adicionar
                                         </Button>
-                                        <Button 
-                                            type="button" 
-                                            onClick={generateVariants} 
+                                        <Button
+                                            type="button"
+                                            onClick={generateVariants}
                                             variant="outline"
                                             className="w-full sm:w-auto"
                                         >

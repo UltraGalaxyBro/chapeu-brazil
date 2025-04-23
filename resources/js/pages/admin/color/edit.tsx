@@ -90,7 +90,7 @@ const EditColor = ({ onOpenChange, selected, ...props }: Props) => {
                     <SheetFooter>
                         <Button type="submit" disabled={processing}>
                             {processing && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {processing ? 'Editando...' : 'Editar'}
+                            {processing ? 'Atualizando...' : 'Editar'}
                         </Button>
                     </SheetFooter>
                 </form>

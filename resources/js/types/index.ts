@@ -121,26 +121,43 @@ export interface ProductIndex {
     total_stock: number;
 }
 
-export interface ProductRelated {
+export interface ProductCreate {
     categories: { id: number; name: string }[];
     brands: { id: number; name: string }[];
     colors: { id: number; name: string; hexadecimal: string }[];
     sizes: { id: number; label: string }[];
     qualities: { id: number; name: string }[];
-    product?: {
+}
+
+export interface ProductEdit {
+    categories: { id: number; name: string }[];
+    brands: { id: number; name: string }[];
+    colors: { id: number; name: string; hexadecimal: string }[];
+    sizes: { id: number; label: string }[];
+    qualities: { id: number; name: string }[];
+    product: {
         id: number;
         category_id: number;
         brand_id: number;
         name: string;
         sku: string;
-        slug: string;
         description: string;
         cost: number;
         price: number;
         is_active: boolean;
         keywords: string;
-        qualities: ProductQuality[];
-        images: ProductImage[];
-        variants: ProductVariant[];
+        qualities: { id: number }[];
+        variants: {
+            id: number;
+            color_id: number;
+            size_id: number;
+            stock: number;
+            additional_price: number;
+        }[];
     };
+    productImages: {
+        id: number;
+        path: string;
+        order: number;
+    }[];
 }
